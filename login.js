@@ -4,8 +4,14 @@ const express = require('express');
 const session = require('express-session');
 const path = require('path');
 const nodemailer = require("nodemailer");
+const rateLimit = require('express-rate-limit');
 const {hostDB, nameDB, userDB, passDB, PORT, pass, user} = require('./configENV');
 const app = express();
+
+const limiter = rateLimit({  
+    windowMs: 15*60*1000,   //15 minutes
+    max: 100,                // limit each IP to 10 per windowMs
+});
 
 const connection = mysql.createConnection({
 	host     : hostDB,
@@ -15,6 +21,7 @@ const connection = mysql.createConnection({
 });
 
 //midleware
+app.use(limiter);
 app.use(session({secret: 'secret', resave: true, saveUninitialized: true}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -52,18 +59,22 @@ app.post('/auth', function(request, response) {
 	}
 });
 
+// app.get('/home', function(request, response) {			//example
+// 	response.sendFile(__dirname + '/public/home.html')
+// });
+
 // http://localhost:3000/home
 app.get('/home', function(request, response) {
 	// If the user is loggedin
 	if (request.session.loggedin) {
 		// Output username
-		response.send('Welcome, ' + request.session.username + '!');
-		console.log('Zalogowano');
+		response.sendFile(__dirname + '/public/home.html')
 	} else {
 		// Not logged in
 		response.send('Please login to view this page!');
+		response.end();
 	}
-	response.end();
+	
 });
 
 // formKontakt
@@ -82,9 +93,14 @@ app.post('/form', (req, res)=>{
   	const mailOptions = {
 		from: req.body.email,
 		to: user,
-		subject: `Meesage from ${req.body.email}: to ${req.body.subject}`,
-		text: req.body.message  
-  	};
+		subject: `Meesage from ${req.body.email}: ${req.body.subject}`,
+		text: 	
+`Email sender: ${req.body.email}		
+Name of sender: ${req.body.name}
+Subject: ${req.body.subject}\n
+Message:\n ${req.body.message}.`  
+};
+
   	transporter.sendMail(mailOptions, (error, info)=>{
 	if (error) {
    	console.log(error);
@@ -95,6 +111,7 @@ app.post('/form', (req, res)=>{
 		}
   	});
 	})
+console.log("Starting...");
 app.listen(PORT, ()=>{console.log(`Server Started on port ${PORT}`)});
 
 /*
