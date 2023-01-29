@@ -5,6 +5,7 @@ const session = require('express-session');
 const path = require('path');
 const nodemailer = require("nodemailer");
 const {hostDB, nameDB, userDB, passDB, PORT, pass, user} = require('./configENV');
+const app = express();
 
 const connection = mysql.createConnection({
 	host     : hostDB,
@@ -13,7 +14,6 @@ const connection = mysql.createConnection({
 	database : nameDB
 });
 
-const app = express();
 //midleware
 app.use(session({secret: 'secret', resave: true, saveUninitialized: true}));
 app.use(express.json());
@@ -58,7 +58,6 @@ app.get('/home', function(request, response) {
 	if (request.session.loggedin) {
 		// Output username
 		response.send('Welcome, ' + request.session.username + '!');
-		
 		console.log('Zalogowano');
 	} else {
 		// Not logged in
@@ -70,12 +69,9 @@ app.get('/home', function(request, response) {
 // formKontakt
 app.get('/form', (req, res)=>{
 	res.sendFile(__dirname + '/public/contact.html')
-	
 })
 
 app.post('/form', (req, res)=>{
-   console.log(req.body);
-
    const transporter = nodemailer.createTransport({
 	service: 'gmail',
 	auth: {
@@ -83,25 +79,22 @@ app.post('/form', (req, res)=>{
 	  pass: pass
 	}
   });
-
-  const mailOptions = {
-	from: req.body.email,
-	to: user,
-	subject: `Meesage from ${req.body.email}: to ${req.body.subject}`,
-	text: req.body.message  
-  };
-
-  transporter.sendMail(mailOptions, (error, info)=>{
+  	const mailOptions = {
+		from: req.body.email,
+		to: user,
+		subject: `Meesage from ${req.body.email}: to ${req.body.subject}`,
+		text: req.body.message  
+  	};
+  	transporter.sendMail(mailOptions, (error, info)=>{
 	if (error) {
-   console.log(error);
-   res.send('error');
-	} else {
-	  console.log('Email sent to ' + mailOptions.to);
-	  res.send('success');
-	}
-  });
-})
-
+   	console.log(error);
+   	res.send('error');
+		} else {
+	 	 console.log('Email sent to ' + mailOptions.to);
+	 	 res.send('success');
+		}
+  	});
+	})
 app.listen(PORT, ()=>{console.log(`Server Started on port ${PORT}`)});
 
 /*

@@ -7,7 +7,6 @@ let message = document.getElementById('message');
 
 contactForm.addEventListener("submit", (e)=>{
     e.preventDefault();
-
     let formData ={                                 //dane sa przekazywane jako obiekt do zmiennej formData
         name: namee.value,
         email: email.value,
