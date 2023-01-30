@@ -6,6 +6,8 @@ const path = require('path');
 const nodemailer = require("nodemailer");
 const rateLimit = require('express-rate-limit');
 const {hostDB, nameDB, userDB, passDB, PORT, pass, user} = require('./configENV');
+
+
 const app = express();
 
 const limiter = rateLimit({  
@@ -59,10 +61,6 @@ app.post('/auth', function(request, response) {
 	}
 });
 
-// app.get('/home', function(request, response) {			//example
-// 	response.sendFile(__dirname + '/public/home.html')
-// });
-
 // http://localhost:3000/home
 app.get('/home', function(request, response) {
 	// If the user is loggedin
@@ -111,7 +109,17 @@ Message:\n ${req.body.message}.`
 		}
   	});
 	})
-console.log("Starting...");
+
+app.get('/register', (req, res)=>{
+		res.sendFile(__dirname + '/public/register.html')
+	})
+
+app.post('/register', function(request, response) {
+		
+		//response.sendFile(__dirname + '/public/login.html');
+	})
+
+console.log('Start...');
 app.listen(PORT, ()=>{console.log(`Server Started on port ${PORT}`)});
 
 /*
