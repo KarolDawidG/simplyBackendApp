@@ -1,18 +1,17 @@
-//const mysql = require('mysql');   From MySQL ser vol:8 you need to update the node package to: npm i mysql2
 const mysql = require('mysql2');
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
 const nodemailer = require("nodemailer");
 const rateLimit = require('express-rate-limit');
+const bcrypt = require('bcrypt');
 const {hostDB, nameDB, userDB, passDB, PORT, pass, user} = require('./configENV');
-
 
 const app = express();
 
 const limiter = rateLimit({  
     windowMs: 15*60*1000,   //15 minutes
-    max: 100,                // limit each IP to 10 per windowMs
+    max: 100,                // limit each IP to 100 per windowMs
 });
 
 const connection = mysql.createConnection({
@@ -29,12 +28,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// http://localhost:3000/  
 app.get('/', function(request, response) {
 	response.sendFile(path.join(__dirname + '/public/login.html'));
 });
 
-// http://localhost:3000/auth
 app.post('/auth', function(request, response) {
 	let username = request.body.username;
 	let password = request.body.password;
@@ -75,7 +72,7 @@ app.get('/home', function(request, response) {
 	
 });
 
-// formKontakt
+// formularz Kontaktowy
 app.get('/form', (req, res)=>{
 	res.sendFile(__dirname + '/public/contact.html')
 })
@@ -92,7 +89,8 @@ app.post('/form', (req, res)=>{
 		from: req.body.email,
 		to: user,
 		subject: `Meesage from ${req.body.email}: ${req.body.subject}`,
-		text: 	
+
+text: 	
 `Email sender: ${req.body.email}		
 Name of sender: ${req.body.name}
 Subject: ${req.body.subject}\n
@@ -110,15 +108,25 @@ Message:\n ${req.body.message}.`
   	});
 	})
 
+
 app.get('/register', (req, res)=>{
 		res.sendFile(__dirname + '/public/register.html')
 	})
 
-app.post('/register', function(request, response) {
-		
-		//response.sendFile(__dirname + '/public/login.html');
-	})
+app.post('/register/', async(request, response)=>{
+	const email = request.body.email;
+	const username = request.body.username;
+	
+	try{
+		const hashPassword = await bcrypt.hash(request.body.password, 10)
+		connection.query(`INSERT INTO accounts (username, password, email) VALUES ("${username}", "${hashPassword}","${email}")`);
+		response.redirect('/');
+	}catch{
+		response.send('Jakis blad');
+	}
 
+})
+	
 console.log('Start...');
 app.listen(PORT, ()=>{console.log(`Server Started on port ${PORT}`)});
 
