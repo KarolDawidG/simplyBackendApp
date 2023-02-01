@@ -4,11 +4,11 @@
     font-size: 16px;
 }
 body {
-    background-color: dimgrey;
+    background-color: grey;
 }
 .login ,.form-container, .register{
     width: 400px;
-    background-color: darkgrey;
+    background-color: #ffffff;
     box-shadow: 0 0 9px 0 rgba(0, 0, 0, 0.3);
     margin: 100px auto;
 }
@@ -25,7 +25,7 @@ body {
     justify-content: center;
     padding-top: 20px;
 }
-.login form label, register form label,.form-container form label{
+.login form label, .register form label,.form-container form label{
     display: flex;
     justify-content: center;
     align-items: center;
