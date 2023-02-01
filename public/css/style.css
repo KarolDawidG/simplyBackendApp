@@ -4,11 +4,11 @@
     font-size: 16px;
 }
 body {
-    background-color: #435165;
+    background-color: dimgrey;
 }
 .login ,.form-container, .register{
     width: 400px;
-    background-color: #ffffff;
+    background-color: darkgrey;
     box-shadow: 0 0 9px 0 rgba(0, 0, 0, 0.3);
     margin: 100px auto;
 }
@@ -46,15 +46,15 @@ body {
     width: 100%;
     padding: 15px;
    margin-top: 20px;
-    background-color: #3274d6;
+    background-color: black;
     border: 0;
     cursor: pointer;
     font-weight: bold;
     color: #ffffff;
     transition: background-color 0.2s;
 }
-.login form input[type="submit"]:hover, .register form input[type="submit"]:hover, .form-container form input[type="submit"]:hover {
-  background-color: #2868c7;
+.login form input[type="submit"]:hover, .register form input[type="submit"]:hover, .form-container form input[type="submit"]:hover, .form-container form input[type="submitMessage"]:hover{
+  background-color: grey;
     transition: background-color 0.2s;
 }
 .form-container form input[type="submitMessage"]{
@@ -62,7 +62,7 @@ body {
     width: 100%;
     padding: 15px;
     margin-top: 20px;
-    background-color: #3274d6;
+    background-color: black;
     border: 0;
     cursor: pointer;
     font-weight: bold;
