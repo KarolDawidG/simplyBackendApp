@@ -1,44 +1,30 @@
 const mysql = require('mysql2');
+const {db} = require('./database/connect');
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
 const nodemailer = require("nodemailer");
-const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcrypt');
-const {hostDB, nameDB, userDB, passDB, PORT, pass, user} = require('./configENV');
-
+const {PORT, pass, user} = require('./config/configENV');
+const {limiter} = require('./config/config');
 const app = express();
 
-const limiter = rateLimit({  
-    windowMs: 15*60*1000,   //15 minutes
-    max: 100,                // limit each IP to 100 per windowMs
-});
-
-const db = mysql.createPool({
-	connectionLimit: 100,
-	host     : hostDB,
-	user     : userDB,
-	password : passDB, 
-	database : nameDB
-});
-
-db.getConnection( (err, connection)=> {
-	if (err) throw (err)
-	console.log ("DB connected successful: " + connection.threadId)
-})
-
-//midleware
+//midleware				///////////////////////////////////////////////////////////////////////////////////////////////
 app.use(limiter);
 app.use(session({secret: 'secret', resave: true, saveUninitialized: true}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// main menu			////////////////////////////////////////////////////////////////////////////////////////////////
 app.get('/', function(request, response) {
 	response.sendFile(path.join(__dirname + '/public/login.html'));
 });
 
-//LOGIN (AUTHENTICATE USER)
+// login		/////////////////////////////////////////////////////////////////////////////////////////////////////
+app.get('/auth', function(request, response) {
+	response.sendFile(path.join(__dirname + '/public/login.html'));
+});
 app.post("/auth", (req, res)=> {
 	const user = req.body.username;
 	const password = req.body.password;
@@ -49,24 +35,21 @@ app.post("/auth", (req, res)=> {
 		const search_query = mysql.format(sqlSearch,[user])
 		connection.query (search_query, async (err, result) => {
 			connection.release()
-
 			if (err) throw (err)
 			if (result.length == 0) {
-				console.log("--------> User does not exist")
+				console.log("User does not exist")
 				res.sendStatus(404)
 			}
 			else {
 				const hashedPassword = result[0].password
-				//get the hashedPassword from result
 				if (await bcrypt.compare(password, hashedPassword)) {
-					console.log("---------> Login Successful")
+					console.log("Login Successful")
 					req.session.loggedin = true;
 					req.session.username = user;
- 				// Redirect to home page
  				res.redirect('/home');
 				}
 				else {
-					console.log("---------> Password Incorrect")
+					console.log("Password Incorrect")
 					res.send("Password incorrect!")
 				}
 			}
@@ -74,7 +57,6 @@ app.post("/auth", (req, res)=> {
 	})
 })
 
-// http://localhost:3000/home
 app.get('/home', function(request, response) {
 	// If the user is loggedin
 	if (request.session.loggedin) {
@@ -85,10 +67,9 @@ app.get('/home', function(request, response) {
 		response.send('Please login to view this page!');
 		response.end();
 	}
-	
 });
 
-// formularz Kontaktowy
+// formularz Kontaktowy			////////////////////////////////////////////////////////////////////////////////////////
 app.get('/form', (req, res)=>{
 	res.sendFile(__dirname + '/public/contact.html')
 })
@@ -124,7 +105,7 @@ Message:\n ${req.body.message}.`
   	});
 	})
 
-
+// register			///////////////////////////////////////////////////////////////////////////////////////////////////
 app.get('/register', (req, res)=>{
 		res.sendFile(__dirname + '/public/register.html')
 	})
@@ -150,15 +131,15 @@ app.post("/register", async (req,res) => {
 				 connection.query (insert_query, (err, result)=> {
 					 connection.release()
 					if (err) throw (err)
-					console.log ("--------> Created new User")
+					console.log ("Created new User")
 					console.log(result.insertId);
 					res.redirect('/');
 				})
 			}
-		}) //end of connection.query()
-	}) //end of db.getConnection()
-}); //end of app.post()
-///////////////////////////////////////////////////////
+		})
+	})
+});
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 console.log('Start...');
 app.listen(PORT, ()=>{console.log(`Server Started on port ${PORT}`)});
 
