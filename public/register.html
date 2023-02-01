@@ -3,30 +3,54 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width,minimum-scale=1">
-		<title>Login</title>
+		<title>Register</title>
 		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css">
+		<link href="/css/style.css" rel="stylesheet">
 	</head>
 	<body>
+
 		<div class="register">
-			<h1>Register</h1>
+
+			<h1>REGISTER</h1>
+
 			<form action="/register" method="post">
-				<label for="username">
-					<i class="fas fa-user"></i>
-				</label>
-				<input type="text" name="username" placeholder="Username" id="username" required>
-                <label for="email">
-					<i class="fas fa-user"></i>
-				</label>
-				<input type="text" name="email" placeholder="E-mail" id="email" required>
-				<label for="password">
-					<i class="fas fa-lock"></i>
-				</label>
-				<input type="password" name="password" placeholder="Password" id="password" required>
+				<input
+						type="text"
+						name="username"
+						placeholder="Username"
+						id="username"
+						minlength="4"
+						maxlength="12"
+						required ><br><br>
+
+				<input
+						type="text"
+						name="email"
+						placeholder="E-mail"
+						id="email"
+						pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+						required><br><br>
+
+				<input
+						type="password"
+						name="password"
+						placeholder="Password"
+						id="password"
+						pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+						required><br><br>
 				<input type="submit" value="Register">
 			</form>
-			
-			
+
+
+			<form action="/form" method="get">
+				<input type="submit" value="Formularz">
+			</form>
+			<form action="/" method="get">
+				<input type="submit" value="Logg in">
+			</form>
+
 			
 		</div>
+
 	</body>
 </html> 
