@@ -14,12 +14,18 @@ const limiter = rateLimit({
     max: 100,                // limit each IP to 100 per windowMs
 });
 
-const connection = mysql.createConnection({
+const db = mysql.createPool({
+	connectionLimit: 100,
 	host     : hostDB,
 	user     : userDB,
 	password : passDB, 
 	database : nameDB
 });
+
+db.getConnection( (err, connection)=> {
+	if (err) throw (err)
+	console.log ("DB connected successful: " + connection.threadId)
+})
 
 //midleware
 app.use(limiter);
@@ -32,31 +38,41 @@ app.get('/', function(request, response) {
 	response.sendFile(path.join(__dirname + '/public/login.html'));
 });
 
-app.post('/auth', function(request, response) {
-	let username = request.body.username;
-	let password = request.body.password;
-	if (username && password) {
-		connection.query('SELECT * FROM accounts WHERE username = ? AND password = ?', [username, password], function(error, results, fields) {
-			// If there is an issue with the query, output the error
-			if (error) throw error;
-			// If the account exists
-			if (results.length > 0) {
-				// Authenticate the user
-				request.session.loggedin = true;
-				request.session.username = username;
-				// Redirect to home page
-				response.redirect('/home');
-			} else {
-				response.send('Incorrect Username and/or Password!');
-				console.log('Niepoprawne haslo')
-			}			
-			response.end();
-		});
-	} else {
-		response.send('Please enter Username and Password!');
-		response.end();
-	}
-});
+//LOGIN (AUTHENTICATE USER)
+app.post("/auth", (req, res)=> {
+	const user = req.body.username;
+	const password = req.body.password;
+
+	db.getConnection (  (err, connection)=> {
+		if (err) throw (err)
+		const sqlSearch = "Select * from userTable where user = ?"
+		const search_query = mysql.format(sqlSearch,[user])
+		connection.query (search_query, async (err, result) => {
+			connection.release()
+
+			if (err) throw (err)
+			if (result.length == 0) {
+				console.log("--------> User does not exist")
+				res.sendStatus(404)
+			}
+			else {
+				const hashedPassword = result[0].password
+				//get the hashedPassword from result
+				if (await bcrypt.compare(password, hashedPassword)) {
+					console.log("---------> Login Successful")
+					req.session.loggedin = true;
+					req.session.username = user;
+ 				// Redirect to home page
+ 				res.redirect('/home');
+				}
+				else {
+					console.log("---------> Password Incorrect")
+					res.send("Password incorrect!")
+				}
+			}
+		})
+	})
+})
 
 // http://localhost:3000/home
 app.get('/home', function(request, response) {
@@ -113,20 +129,36 @@ app.get('/register', (req, res)=>{
 		res.sendFile(__dirname + '/public/register.html')
 	})
 
-app.post('/register/', async(request, response)=>{
-	const email = request.body.email;
-	const username = request.body.username;
-	
-	try{
-		const hashPassword = await bcrypt.hash(request.body.password, 10)
-		connection.query(`INSERT INTO accounts (username, password, email) VALUES ("${username}", "${hashPassword}","${email}")`);
-		response.redirect('/');
-	}catch{
-		response.send('Jakis blad');
-	}
+app.post("/register", async (req,res) => {
+	const user = req.body.username;
+	const hashedPassword = await bcrypt.hash(req.body.password,10);
+	db.getConnection(  (err, connection) => {
+		if (err) throw (err)
+		const sqlSearch = "SELECT * FROM userTable WHERE user = ?"
+		const search_query = mysql.format(sqlSearch,[user])
+		const sqlInsert = "INSERT INTO userTable VALUES (0,?,?)"
+		const insert_query = mysql.format(sqlInsert,[user, hashedPassword])
 
-})
-	
+		connection.query (search_query,  (err, result) => {
+			if (err) throw (err)
+			console.log("------> Search Results")
+			console.log(result.length)
+			if (result.length != 0) {
+				connection.release()
+			}
+			else {
+				 connection.query (insert_query, (err, result)=> {
+					 connection.release()
+					if (err) throw (err)
+					console.log ("--------> Created new User")
+					console.log(result.insertId);
+					res.redirect('/');
+				})
+			}
+		}) //end of connection.query()
+	}) //end of db.getConnection()
+}); //end of app.post()
+///////////////////////////////////////////////////////
 console.log('Start...');
 app.listen(PORT, ()=>{console.log(`Server Started on port ${PORT}`)});
 
