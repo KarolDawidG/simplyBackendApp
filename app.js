@@ -23,12 +23,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // main menu			////////////////////////////////////////////////////////////////////////////////////////////////
 app.get('/', (request, response) => {
-	response.sendFile(path.join(__dirname + '/public/login.html'));
+	response.render('home', {layout : 'login'});
 });
 
 // login		/////////////////////////////////////////////////////////////////////////////////////////////////////
 app.get('/auth', (request, response)=> {
-	response.sendFile(path.join(__dirname + '/public/login.html'));
+	response.render('home', {layout : 'login'});
 });
 app.post("/auth", (req, res)=> {
 	const user = req.body.username;
@@ -43,7 +43,7 @@ app.post("/auth", (req, res)=> {
 			if (err) throw (err)
 			if (result.length == 0) {
 				console.log("User does not exist")
-				res.render('home');
+				res.render('home', {layout : 'wrongUser'});	//taki dynamiczny redirect
 				//res.send("User does not exist!");
 			}
 			else {
@@ -52,11 +52,11 @@ app.post("/auth", (req, res)=> {
 					console.log("Login Successful")
 					req.session.loggedin = true;
 					req.session.username = user;
- 				res.redirect('/home');
+					res.render('home', {layout : 'home'});
 				}
 				else {
 					console.log("Password Incorrect")
-					res.send("Password incorrect!");
+					res.render('home', {layout : 'wrongPass'});
 				}
 			}
 		})
@@ -67,17 +67,17 @@ app.get('/home', (request, response) => {
 	// If the user is loggedin
 	if (request.session.loggedin) {
 		// Output username
-		response.sendFile(__dirname + '/public/home.html')
+		response.render('home', {layout : 'home'});
 	} else {
 		// Not logged in
-		response.send('Please login to view this page!');
-		response.end();
+		response.render('home', {layout : 'login'});
 	}
 });
 
 // formularz Kontaktowy			////////////////////////////////////////////////////////////////////////////////////////
 app.get('/form', (req, res)=>{
-	res.sendFile(__dirname + '/public/contact.html')
+	//res.sendFile(__dirname + '/public/contact.html')
+	res.render('home', {layout : 'contact'});
 })
 
 app.post('/form', (req, res)=>{
@@ -113,7 +113,8 @@ Message:\n ${req.body.message}.`
 
 // register			///////////////////////////////////////////////////////////////////////////////////////////////////
 app.get('/register', (req, res)=>{
-		res.sendFile(__dirname + '/public/register.html')
+		//res.sendFile(__dirname + '/public/register.html')
+	res.render('home', {layout : 'register'});
 	})
 
 app.post("/register", async (req,res) => {
@@ -128,18 +129,17 @@ app.post("/register", async (req,res) => {
 
 		connection.query (search_query,  (err, result) => {
 			if (err) throw (err)
-			console.log("------> Search Results")
 			console.log(result.length)
 			if (result.length != 0) {
 				connection.release()
 			}
 			else {
-				 connection.query (insert_query, (err, result)=> {
-					 connection.release()
-					if (err) throw (err)
-					console.log ("Created new User")
-					console.log(result.insertId);
-					res.redirect('/');
+					 connection.query (insert_query, (err, result)=> {
+						 connection.release()
+						if (err) throw (err)
+						console.log ("Created new User")
+						console.log(result.insertId);
+						 res.render('home', {layout : 'login'});
 				})
 			}
 		})
