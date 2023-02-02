@@ -1,151 +1,33 @@
-const mysql = require('mysql2');
-const {db} = require('./database/connect');
 const express = require('express');
 const session = require('express-session');
 const hbs = require('express-handlebars');
-const path = require('path');
-const nodemailer = require("nodemailer");
-const bcrypt = require('bcrypt');
-const {PORT, pass, user, SECRET} = require('./config/configENV');
+const {PORT,  SECRET} = require('./config/configENV');
 const {limiter} = require('./config/config');
 const app = express();
 
-// to do: fix routes
+const logRoute = require('./routes/loginRoute');
+const regRoute = require('./routes/registerRoute');
+const mailRoute = require('./routes/mailRoute');
+const home = require('./routes/homeRoute');
 
-//midleware				///////////////////////////////////////////////////////////////////////////////////////////////
+app.use('/auth', logRoute );
+app.use('/register', regRoute );
+app.use('/form', mailRoute );
+app.use('/home', home );
+
 app.engine('.hbs', hbs.engine({extname: '.hbs'}));
 app.set('view engine', '.hbs');
 app.use(limiter);
 app.use(session({secret: SECRET, resave: true, saveUninitialized: true}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); 	//dodac aby odczytac dane z formularza
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
 // main menu			////////////////////////////////////////////////////////////////////////////////////////////////
 app.get('/', (request, response) => {
 	response.render('home', {layout : 'login'});
 });
 
-// login		/////////////////////////////////////////////////////////////////////////////////////////////////////
-app.get('/auth', (request, response)=> {
-	response.render('home', {layout : 'login'});
-});
-app.post("/auth", (req, res)=> {
-	const user = req.body.username;
-	const password = req.body.password;
-
-	db.getConnection (  (err, connection)=> {
-		if (err) throw (err)
-		const sqlSearch = "Select * from userTable where user = ?"
-		const search_query = mysql.format(sqlSearch,[user])
-		connection.query (search_query, async (err, result) => {
-			connection.release()
-			if (err) throw (err)
-			if (result.length == 0) {
-				console.log("User does not exist")
-				res.render('home', {layout : 'wrongUser'});	//taki dynamiczny redirect
-				//res.send("User does not exist!");
-			}
-			else {
-				const hashedPassword = result[0].password
-				if (await bcrypt.compare(password, hashedPassword)) {
-					console.log("Login Successful")
-					req.session.loggedin = true;
-					req.session.username = user;
-					res.render('home', {layout : 'home'});
-				}
-				else {
-					console.log("Password Incorrect")
-					res.render('home', {layout : 'wrongPass'});
-				}
-			}
-		})
-	})
-})
-
-app.get('/home', (request, response) => {
-	// If the user is loggedin
-	if (request.session.loggedin) {
-		// Output username
-		response.render('home', {layout : 'home'});
-	} else {
-		// Not logged in
-		response.render('home', {layout : 'login'});
-	}
-});
-
-// formularz Kontaktowy			////////////////////////////////////////////////////////////////////////////////////////
-app.get('/form', (req, res)=>{
-	//res.sendFile(__dirname + '/public/contact.html')
-	res.render('home', {layout : 'contact'});
-})
-
-app.post('/form', (req, res)=>{
-   const transporter = nodemailer.createTransport({
-	service: 'gmail',
-	auth: {
-	  user: user,
-	  pass: pass
-	}
-  });
-  	const mailOptions = {
-		from: req.body.email,
-		to: user,
-		subject: `Meesage from ${req.body.email}: ${req.body.subject}`,
-
-text:
-`Email sender: ${req.body.email}		
-Name of sender: ${req.body.name}
-Subject: ${req.body.subject}\n
-Message:\n ${req.body.message}.`
-};
-
-  	transporter.sendMail(mailOptions, (error, info)=>{
-	if (error) {
-   	console.log(error);
-   	res.send('error');
-		} else {
-	 	 console.log('Email sent to ' + mailOptions.to);
-	 	 res.send('success');
-		}
-  	});
-	})
-
-// register			///////////////////////////////////////////////////////////////////////////////////////////////////
-app.get('/register', (req, res)=>{
-		//res.sendFile(__dirname + '/public/register.html')
-	res.render('home', {layout : 'register'});
-	})
-
-app.post("/register", async (req,res) => {
-	const user = req.body.username;
-	const hashedPassword = await bcrypt.hash(req.body.password,10);
-	db.getConnection(  (err, connection) => {
-		if (err) throw (err)
-		const sqlSearch = "SELECT * FROM userTable WHERE user = ?"
-		const search_query = mysql.format(sqlSearch,[user])
-		const sqlInsert = "INSERT INTO userTable VALUES (0,?,?)"
-		const insert_query = mysql.format(sqlInsert,[user, hashedPassword])
-
-		connection.query (search_query,  (err, result) => {
-			if (err) throw (err)
-			console.log(result.length)
-			if (result.length != 0) {
-				connection.release()
-			}
-			else {
-					 connection.query (insert_query, (err, result)=> {
-						 connection.release()
-						if (err) throw (err)
-						console.log ("Created new User")
-						console.log(result.insertId);
-						 res.render('home', {layout : 'login'});
-				})
-			}
-		})
-	})
-});
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 console.log('Start...');
 app.listen(PORT, ()=>{console.log(`Server Started on port ${PORT}`)});
 
