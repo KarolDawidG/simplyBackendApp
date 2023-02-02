@@ -2,28 +2,32 @@ const mysql = require('mysql2');
 const {db} = require('./database/connect');
 const express = require('express');
 const session = require('express-session');
+const hbs = require('express-handlebars');
 const path = require('path');
 const nodemailer = require("nodemailer");
 const bcrypt = require('bcrypt');
-const {PORT, pass, user} = require('./config/configENV');
+const {PORT, pass, user, SECRET} = require('./config/configENV');
 const {limiter} = require('./config/config');
 const app = express();
 
+// to do: fix routes
 
 //midleware				///////////////////////////////////////////////////////////////////////////////////////////////
+app.engine('.hbs', hbs.engine({extname: '.hbs'}));
+app.set('view engine', '.hbs');
 app.use(limiter);
-app.use(session({secret: 'secret', resave: true, saveUninitialized: true}));
+app.use(session({secret: SECRET, resave: true, saveUninitialized: true}));
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true })); 	//dodac aby odczytac dane z formularza
 app.use(express.static(path.join(__dirname, 'public')));
 
 // main menu			////////////////////////////////////////////////////////////////////////////////////////////////
-app.get('/', function(request, response) {
+app.get('/', (request, response) => {
 	response.sendFile(path.join(__dirname + '/public/login.html'));
 });
 
 // login		/////////////////////////////////////////////////////////////////////////////////////////////////////
-app.get('/auth', function(request, response) {
+app.get('/auth', (request, response)=> {
 	response.sendFile(path.join(__dirname + '/public/login.html'));
 });
 app.post("/auth", (req, res)=> {
@@ -39,7 +43,8 @@ app.post("/auth", (req, res)=> {
 			if (err) throw (err)
 			if (result.length == 0) {
 				console.log("User does not exist")
-				res.sendStatus(404)
+				res.render('home');
+				//res.send("User does not exist!");
 			}
 			else {
 				const hashedPassword = result[0].password
@@ -51,14 +56,14 @@ app.post("/auth", (req, res)=> {
 				}
 				else {
 					console.log("Password Incorrect")
-					res.send("Password incorrect!")
+					res.send("Password incorrect!");
 				}
 			}
 		})
 	})
 })
 
-app.get('/home', function(request, response) {
+app.get('/home', (request, response) => {
 	// If the user is loggedin
 	if (request.session.loggedin) {
 		// Output username
@@ -88,11 +93,11 @@ app.post('/form', (req, res)=>{
 		to: user,
 		subject: `Meesage from ${req.body.email}: ${req.body.subject}`,
 
-text: 	
+text:
 `Email sender: ${req.body.email}		
 Name of sender: ${req.body.name}
 Subject: ${req.body.subject}\n
-Message:\n ${req.body.message}.`  
+Message:\n ${req.body.message}.`
 };
 
   	transporter.sendMail(mailOptions, (error, info)=>{
