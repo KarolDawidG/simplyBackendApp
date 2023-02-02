@@ -1,4 +1,11 @@
+* {
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "segoe ui", roboto, oxygen, ubuntu, cantarell, "fira sans", "droid sans", "helvetica neue", Arial, sans-serif;
+    font-size: 16px;
+}
+
 body {
+    background-color: grey;
     display: flex;
     justify-content: center;
     height: 100vh;
@@ -6,7 +13,6 @@ body {
     margin: 0;
     font-family: 'Courier New', Courier, monospace;
 }
-
 
 .password-cantainer{
     background-color: pink;
